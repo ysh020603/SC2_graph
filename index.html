@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SC2 知识图谱</title>
+    <link rel="stylesheet" href="./css/main.css" />
+    <script src="./vendor/g6.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1>SC2 知识图谱</h1>
+          <p class="subtitle">基于 data_base_add_graph.json · 力导向布局 · 多维过滤</p>
+        </div>
+        <div id="status-bar" class="status-bar">初始化中...</div>
+      </header>
+
+      <div class="app-body">
+        <aside id="filter-panel" class="filter-panel">
+          <section>
+            <h2>节点类型</h2>
+            <label><input type="checkbox" data-filter-kind value="Ability" checked /> 技能 (Ability)</label>
+            <label><input type="checkbox" data-filter-kind value="Unit" checked /> 单位 (Unit)</label>
+            <label><input type="checkbox" data-filter-kind value="Upgrade" checked /> 科技 (Upgrade)</label>
+          </section>
+
+          <section>
+            <h2>种族（单位）</h2>
+            <label><input type="checkbox" data-filter-race value="Terran" checked /> 人族 (Terran)</label>
+            <label><input type="checkbox" data-filter-race value="Protoss" checked /> 神族 (Protoss)</label>
+            <label><input type="checkbox" data-filter-race value="Zerg" checked /> 虫族 (Zerg)</label>
+          </section>
+
+          <section>
+            <h2>关系层级</h2>
+            <label><input type="checkbox" data-filter-layer value="base" checked /> 基础层 · 实线灰</label>
+            <label><input type="checkbox" data-filter-layer value="inferred" checked /> 推理层 · 粗虚线绿</label>
+            <label><input type="checkbox" data-filter-layer value="semantic" checked /> 语义层 · 点划线红</label>
+          </section>
+
+          <section class="legend">
+            <h2>图例</h2>
+            <div class="legend-item"><span class="shape circle large terran"></span> 单位 · 圆形 · 大</div>
+            <div class="legend-item"><span class="shape hex medium upgrade"></span> 科技 · 六边形 · 中</div>
+            <div class="legend-item"><span class="shape square small ability"></span> 技能 · 方形 · 小</div>
+            <div class="legend-item"><span class="line base"></span> 基础层</div>
+            <div class="legend-item"><span class="line inferred"></span> 推理层</div>
+            <div class="legend-item"><span class="line semantic"></span> 语义层</div>
+          </section>
+        </aside>
+
+        <main class="canvas-panel">
+          <div id="graph-canvas" class="graph-canvas"></div>
+        </main>
+
+        <aside id="details-panel" class="details-panel">
+          <h2 id="details-title">详情面板</h2>
+          <div id="details-content">
+            <p class="placeholder">点击节点查看实体属性，或点击连线查看关系描述。</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
