@@ -1,6 +1,7 @@
 import { DATA_URL } from "./config.js";
 import { createDetailsPanel } from "./details.js";
 import { createGraphApp } from "./graph.js";
+import { initQueryControls } from "./queryControls.js";
 
 function flushUI() {
   return new Promise((resolve) => {
@@ -176,6 +177,7 @@ async function bootstrap() {
     app.bindFilters(filterRoot);
     app.bindRelationFilters(edgeFilterGroup);
     bindGraphControls(app);
+    initQueryControls(graphData, app);
     await app.start();
   } catch (error) {
     showBootstrapError(

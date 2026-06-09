@@ -55,6 +55,47 @@
 
         <main class="canvas-panel">
           <div id="graph-controls" class="graph-controls">
+            <section id="entity-locate-panel" class="entity-locate-panel">
+              <h3>实体精确定位</h3>
+              <div class="control-group">
+                <label for="entityUnitInput">单位 (Unit)</label>
+                <input
+                  type="text"
+                  id="entityUnitInput"
+                  list="entityUnitList"
+                  placeholder="输入或选择单位"
+                  autocomplete="off"
+                />
+                <datalist id="entityUnitList"></datalist>
+              </div>
+              <div class="control-group">
+                <label for="entityAbilityInput">技能/动作 (Ability)</label>
+                <input
+                  type="text"
+                  id="entityAbilityInput"
+                  list="entityAbilityList"
+                  placeholder="输入或选择技能"
+                  autocomplete="off"
+                />
+                <datalist id="entityAbilityList"></datalist>
+              </div>
+              <div class="control-group">
+                <label for="entityUpgradeInput">科技/升级 (Upgrade)</label>
+                <input
+                  type="text"
+                  id="entityUpgradeInput"
+                  list="entityUpgradeList"
+                  placeholder="输入或选择科技"
+                  autocomplete="off"
+                />
+                <datalist id="entityUpgradeList"></datalist>
+              </div>
+              <div class="entity-locate-actions">
+                <button type="button" id="entityFocusBtn" class="primary-btn">定位/展示</button>
+                <button type="button" id="entityResetBtn">重置</button>
+              </div>
+            </section>
+
             <h3>图谱过滤器</h3>
 
             <div class="control-group">

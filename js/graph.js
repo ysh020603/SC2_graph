@@ -318,6 +318,8 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   let graph = null;
   let selectedItem = null;
   let renderErrorEl = null;
+  let filterRootEl = null;
+  let entityFocusActive = false;
 
   const nodes = graphData.nodes.map(buildNodeModel);
   const edges = graphData.edges.map(buildEdgeModel);
@@ -583,7 +585,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       selectedItem = null;
     }
 
-    if (!selectedItem) {
+    if (!selectedItem && !entityFocusActive) {
       clearRelationDimStates();
     }
 
@@ -596,10 +598,221 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       return;
     }
     selectedItem = null;
+    entityFocusActive = false;
     applyFilters();
   }
 
+  function syncFilterCheckboxes() {
+    if (!filterRootEl) {
+      return;
+    }
+    filterRootEl.querySelectorAll("[data-filter-kind]").forEach((input) => {
+      input.checked = filterState.kinds[input.value];
+    });
+    filterRootEl.querySelectorAll("[data-filter-race]").forEach((input) => {
+      input.checked = filterState.races[input.value];
+    });
+  }
+
+  function ensureNodesVisible(nodeIds) {
+    const adjusted = [];
+
+    nodeIds.forEach((nodeId) => {
+      const model = nodes.find((node) => node.id === nodeId);
+      if (!model) {
+        return;
+      }
+
+      filterState.manuallyHiddenIds.delete(nodeId);
+
+      if (!filterState.kinds[model.kind]) {
+        filterState.kinds[model.kind] = true;
+        adjusted.push(`节点类型「${model.kind}」`);
+      }
+
+      if (model.kind === "Unit") {
+        const race = model.payload?.race;
+        if (race && !filterState.races[race]) {
+          filterState.races[race] = true;
+          adjusted.push(`种族「${race}」`);
+        }
+      }
+
+      filterState.revealedIds.add(nodeId);
+      const neighbors = neighborMap.get(nodeId);
+      if (neighbors) {
+        neighbors.forEach((neighborId) => filterState.revealedIds.add(neighborId));
+      }
+    });
+
+    if (nodeIds.length > 0) {
+      activateFilter();
+    }
+
+    if (adjusted.length > 0) {
+      syncFilterCheckboxes();
+      onStatus?.(`已自动解除过滤限制：${[...new Set(adjusted)].join("、")}`);
+    }
+  }
+
+  function focusItemsBBox(items) {
+    if (!graph || items.length === 0) {
+      return;
+    }
+
+    if (items.length === 1 && typeof graph.focusItem === "function") {
+      graph.focusItem(items[0], true, {
+        easing: "easeCubic",
+        duration: 450,
+      });
+      return;
+    }
+
+    if (typeof graph.fitView === "function") {
+      try {
+        graph.fitView(FIT_VIEW_PADDING, items, true, {
+          easing: "easeCubic",
+          duration: 450,
+        });
+        return;
+      } catch (fitError) {
+        console.warn("多节点 fitView 失败，回退到手动计算包围盒", fitError);
+      }
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    items.forEach((item) => {
+      const bbox = typeof item.getBBox === "function" ? item.getBBox() : null;
+      if (bbox) {
+        minX = Math.min(minX, bbox.minX);
+        minY = Math.min(minY, bbox.minY);
+        maxX = Math.max(maxX, bbox.maxX);
+        maxY = Math.max(maxY, bbox.maxY);
+        return;
+      }
+      const model = item.getModel();
+      const half = (model.size || 24) / 2;
+      minX = Math.min(minX, model.x - half);
+      minY = Math.min(minY, model.y - half);
+      maxX = Math.max(maxX, model.x + half);
+      maxY = Math.max(maxY, model.y + half);
+    });
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const bboxWidth = Math.max(maxX - minX, 80);
+    const bboxHeight = Math.max(maxY - minY, 80);
+    const graphWidth = graph.get("width");
+    const graphHeight = graph.get("height");
+    const ratio = Math.min(
+      (graphWidth - FIT_VIEW_PADDING * 2) / bboxWidth,
+      (graphHeight - FIT_VIEW_PADDING * 2) / bboxHeight,
+      2,
+    );
+
+    if (typeof graph.zoomTo === "function") {
+      graph.zoomTo(ratio, { x: centerX, y: centerY });
+    }
+    if (typeof graph.moveTo === "function") {
+      graph.moveTo(centerX, centerY, true);
+    }
+  }
+
+  function highlightEntities(nodeIds) {
+    if (!graph) {
+      return { ok: false, message: "图谱尚未初始化" };
+    }
+
+    const uniqueIds = [...new Set(nodeIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return { ok: false, message: "未提供有效节点" };
+    }
+
+    const missingIds = uniqueIds.filter((nodeId) => !nodes.some((node) => node.id === nodeId));
+    if (missingIds.length > 0) {
+      return { ok: false, message: `未找到节点：${missingIds.join("、")}` };
+    }
+
+    ensureNodesVisible(uniqueIds);
+    applyFilters();
+
+    const focusIds = new Set(uniqueIds);
+    uniqueIds.forEach((nodeId) => {
+      const neighbors = neighborMap.get(nodeId);
+      if (neighbors) {
+        neighbors.forEach((neighborId) => focusIds.add(neighborId));
+      }
+    });
+
+    graph.getEdges().forEach((edge) => {
+      if (edge.isVisible?.() === false) {
+        return;
+      }
+      const model = edge.getModel();
+      const connected =
+        focusIds.has(model.source) && focusIds.has(model.target) &&
+        (uniqueIds.includes(model.source) || uniqueIds.includes(model.target));
+      if (connected) {
+        graph.setItemState(edge, "highlight", true);
+        graph.clearItemStates(edge, ["dim"]);
+      } else {
+        graph.setItemState(edge, "dim", true);
+        graph.clearItemStates(edge, ["highlight"]);
+      }
+    });
+
+    graph.getNodes().forEach((node) => {
+      if (node.isVisible?.() === false) {
+        return;
+      }
+      const nodeId = node.getID();
+      if (focusIds.has(nodeId)) {
+        graph.setItemState(node, "highlight", true);
+        graph.clearItemStates(node, ["dim"]);
+      } else {
+        graph.setItemState(node, "dim", true);
+        graph.clearItemStates(node, ["highlight"]);
+      }
+    });
+
+    const focusItems = uniqueIds
+      .map((nodeId) => graph.findById(nodeId))
+      .filter((item) => item && item.isVisible?.() !== false);
+
+    if (focusItems.length === 0) {
+      return { ok: false, message: "所选实体在图谱中不可见，请检查筛选条件" };
+    }
+
+    entityFocusActive = true;
+    selectedItem = focusItems[0];
+    applyPerformanceMode();
+    detailsPanel.showNode(focusItems[0].getModel());
+
+    requestAnimationFrame(() => {
+      focusItemsBBox(focusItems);
+    });
+
+    onStatus?.(`已定位 ${uniqueIds.length} 个实体 · 高亮一度邻居`);
+    return { ok: true, count: uniqueIds.length };
+  }
+
+  function resetEntityFocus() {
+    clearSelectionHighlight();
+    detailsPanel.showPlaceholder();
+    if (graph) {
+      requestAnimationFrame(() => {
+        graph.fitView(FIT_VIEW_PADDING);
+      });
+    }
+    onStatus?.("已重置实体定位 · 恢复当前筛选视图");
+  }
+
   function highlightNeighborhood(centerNode) {
+    entityFocusActive = false;
     selectedItem = centerNode;
 
     const centerId = centerNode.getID();
@@ -639,6 +852,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   }
 
   function highlightEdge(edge) {
+    entityFocusActive = false;
     selectedItem = edge;
 
     const model = edge.getModel();
@@ -892,6 +1106,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   }
 
   function bindFilters(filterRoot) {
+    filterRootEl = filterRoot;
     filterRoot.querySelectorAll("[data-filter-kind]").forEach((input) => {
       input.addEventListener("change", () => {
         activateFilter();
@@ -1002,5 +1217,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     hideSpecificNode,
     filterEdgeTypes,
     revealAllNodes,
+    highlightEntities,
+    resetEntityFocus,
   };
 }
