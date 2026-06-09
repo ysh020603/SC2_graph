@@ -1,5 +1,4 @@
 import { DATA_URL } from "./config.js";
-import { parseGraphData } from "./parser.js";
 import { createDetailsPanel } from "./details.js";
 import { createGraphApp } from "./graph.js";
 
@@ -9,20 +8,61 @@ function flushUI() {
   });
 }
 
-function populateEdgeFilter(selectEl, edges) {
+function parseGraphDataInWorker(raw) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker("./js/dataWorker.js", { type: "module" });
+
+    worker.onmessage = (event) => {
+      worker.terminate();
+      const payload = event.data;
+      if (payload.type === "success") {
+        resolve(payload);
+      } else {
+        const message = (payload.errors || ["数据处理失败"]).join("；");
+        reject(new Error(message));
+      }
+    };
+
+    worker.onerror = (error) => {
+      worker.terminate();
+      reject(error);
+    };
+
+    worker.postMessage(raw);
+  });
+}
+
+function populateEdgeFilter(containerEl, edges) {
+  if (!containerEl) {
+    return;
+  }
+
   const relationTypes = [...new Set(edges.map((edge) => edge.relation).filter(Boolean))].sort();
+  const listEl = containerEl.querySelector("#edgeFilterList");
+  if (!listEl) {
+    return;
+  }
+
+  listEl.innerHTML = "";
   relationTypes.forEach((relation) => {
-    const option = document.createElement("option");
-    option.value = relation;
-    option.textContent = relation;
-    selectEl.appendChild(option);
+    const label = document.createElement("label");
+    label.className = "relation-filter-item";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = relation;
+    input.dataset.filterRelation = "";
+
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(` ${relation}`));
+    listEl.appendChild(label);
   });
 }
 
 function bindGraphControls(app) {
   const hideNodeInput = document.getElementById("hideNodeInput");
   const hideNodeBtn = document.getElementById("hideNodeBtn");
-  const edgeFilter = document.getElementById("edgeFilter");
+  const revealAllBtn = document.getElementById("revealAllBtn");
 
   hideNodeBtn?.addEventListener("click", () => {
     const nodeValue = hideNodeInput?.value.trim();
@@ -46,8 +86,8 @@ function bindGraphControls(app) {
     }
   });
 
-  edgeFilter?.addEventListener("change", () => {
-    app.filterEdgeTypes(edgeFilter.value);
+  revealAllBtn?.addEventListener("click", () => {
+    app.revealAllNodes();
   });
 
   window.hideSpecificNode = () => {
@@ -55,10 +95,27 @@ function bindGraphControls(app) {
   };
 
   window.filterEdgeTypes = () => {
-    if (edgeFilter) {
-      app.filterEdgeTypes(edgeFilter.value);
+    const relationRoot = document.getElementById("edgeFilterGroup");
+    if (!relationRoot) {
+      return;
     }
+    const selected = [
+      ...relationRoot.querySelectorAll("[data-filter-relation]:checked"),
+    ].map((input) => input.value);
+    app.filterEdgeTypes(selected);
   };
+}
+
+function showBootstrapError(statusEl, canvasEl, message) {
+  canvasEl?.classList.remove("is-loading");
+  if (statusEl) {
+    statusEl.textContent = message;
+  }
+  const errorEl = document.getElementById("graph-error");
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.classList.remove("hidden");
+  }
 }
 
 async function bootstrap() {
@@ -66,16 +123,23 @@ async function bootstrap() {
   const canvasEl = document.querySelector("#graph-canvas");
   const filterRoot = document.querySelector("#filter-panel");
   const detailsRoot = document.querySelector("#details-panel");
-  const edgeFilter = document.querySelector("#edgeFilter");
+  const edgeFilterGroup = document.querySelector("#edgeFilterGroup");
 
   if (window.location.protocol === "file:") {
-    statusEl.textContent =
-      "无法直接打开本地 HTML。请在 graph_viewer 目录运行 python3 serve.py，然后访问 http://127.0.0.1:8765/";
+    showBootstrapError(
+      statusEl,
+      canvasEl,
+      "无法直接打开本地 HTML。请在 graph_viewer 目录运行 python3 serve.py，然后访问 http://127.0.0.1:8765/",
+    );
     return;
   }
 
   if (typeof G6 === "undefined") {
-    statusEl.textContent = "加载失败：G6 库未就绪，请刷新页面或检查 graph_viewer/vendor/g6.min.js";
+    showBootstrapError(
+      statusEl,
+      canvasEl,
+      "加载失败：G6 库未就绪，请刷新页面或检查 graph_viewer/vendor/g6.min.js",
+    );
     return;
   }
 
@@ -88,12 +152,18 @@ async function bootstrap() {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    statusEl.textContent = "正在解析图谱数据...";
+    statusEl.textContent = "正在后台线程解析图谱数据...";
     await flushUI();
 
     const raw = await response.json();
-    const graphData = parseGraphData(raw);
-    populateEdgeFilter(edgeFilter, graphData.edges);
+    const workerResult = await parseGraphDataInWorker(raw);
+    const graphData = workerResult.graphData;
+
+    if (workerResult.warnings?.length) {
+      console.warn("数据校验警告：", workerResult.warnings);
+    }
+
+    populateEdgeFilter(edgeFilterGroup, graphData.edges);
     const detailsPanel = createDetailsPanel(detailsRoot);
     canvasEl.classList.add("is-loading");
 
@@ -104,11 +174,15 @@ async function bootstrap() {
       statusEl.textContent = message;
     });
     app.bindFilters(filterRoot);
+    app.bindRelationFilters(edgeFilterGroup);
     bindGraphControls(app);
     await app.start();
   } catch (error) {
-    canvasEl?.classList.remove("is-loading");
-    statusEl.textContent = `加载失败：${error.message}。请在 graph_viewer 目录运行 python3 serve.py 后访问`;
+    showBootstrapError(
+      statusEl,
+      canvasEl,
+      `加载失败：${error.message}。请在 graph_viewer 目录运行 python3 serve.py 后访问`,
+    );
     console.error(error);
   }
 }

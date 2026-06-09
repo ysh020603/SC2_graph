@@ -1,4 +1,10 @@
-import { COLORS, COMBO_CONFIG, RELATION_LAYERS } from "./config.js";
+import {
+  COLORS,
+  COMBO_CONFIG,
+  COMBO_LAYOUT_CENTERS,
+  GRID_NODE_SPACING,
+  RELATION_LAYERS,
+} from "./config.js";
 
 const KINDS = ["Unit", "Ability", "Upgrade"];
 
@@ -85,6 +91,102 @@ export function parseGraphData(raw) {
 
   assignCombos(graphData);
   return graphData;
+}
+
+/**
+ * Validate raw input and sanitize graph data before feeding G6.
+ * Removes dead edges and invalid coordinates to prevent white-screen crashes.
+ */
+export function validateAndSanitizeGraphData(raw, graphData) {
+  const errors = [];
+  const warnings = [];
+
+  for (const kind of KINDS) {
+    if (raw[kind] !== undefined && !Array.isArray(raw[kind])) {
+      errors.push(`顶层字段 ${kind} 必须是数组`);
+    }
+  }
+
+  if (!graphData.nodes.length) {
+    errors.push("解析后节点数为 0，无法渲染图谱");
+  }
+
+  const nodeIds = new Set(graphData.nodes.map((node) => node.id));
+  const validEdges = [];
+
+  graphData.edges.forEach((edge) => {
+    if (!edge.source || !edge.target) {
+      warnings.push(`边 ${edge.id || "(未知)"} 缺少 source 或 target`);
+      return;
+    }
+    if (!nodeIds.has(edge.source)) {
+      warnings.push(`死边已剔除：源节点不存在 ${edge.source}`);
+      return;
+    }
+    if (!nodeIds.has(edge.target)) {
+      warnings.push(`死边已剔除：目标节点不存在 ${edge.target}`);
+      return;
+    }
+    if (!edge.relation) {
+      warnings.push(`边 ${edge.id} 缺少 relation 字段，已剔除`);
+      return;
+    }
+    validEdges.push(edge);
+  });
+
+  graphData.edges = validEdges;
+  graphData.stats.edgeCount = validEdges.length;
+
+  graphData.nodes.forEach((node) => {
+    if (node.x !== undefined && (!Number.isFinite(node.x) || Number.isNaN(node.x))) {
+      delete node.x;
+      delete node.y;
+      warnings.push(`节点 ${node.id} 坐标无效，已移除`);
+    }
+    if (node.y !== undefined && (!Number.isFinite(node.y) || Number.isNaN(node.y))) {
+      delete node.x;
+      delete node.y;
+      warnings.push(`节点 ${node.id} 坐标无效，已移除`);
+    }
+  });
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    graphData,
+  };
+}
+
+/**
+ * Pre-compute grid coordinates per combo so the frontend can skip force layout.
+ */
+export function assignPresetLayout(data) {
+  const comboGroups = new Map();
+
+  data.nodes.forEach((node) => {
+    const comboId = node.comboId || "default";
+    if (!comboGroups.has(comboId)) {
+      comboGroups.set(comboId, []);
+    }
+    comboGroups.get(comboId).push(node);
+  });
+
+  comboGroups.forEach((nodes, comboId) => {
+    const center = COMBO_LAYOUT_CENTERS[comboId] || { cx: 0, cy: 0 };
+    const count = nodes.length;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
+    const spacing = GRID_NODE_SPACING;
+
+    nodes.forEach((node, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      node.x = center.cx + (col - (cols - 1) / 2) * spacing;
+      node.y = center.cy + row * spacing;
+    });
+  });
+
+  return data;
 }
 
 /** Assign G6 combos and per-kind colors for ontology separation. */

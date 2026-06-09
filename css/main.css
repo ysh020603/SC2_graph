@@ -244,6 +244,96 @@ body {
   width: 100%;
 }
 
+.relation-filter-group {
+  margin-top: 6px;
+}
+
+.relation-filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.relation-filter-list {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #fff;
+}
+
+.relation-filter-item {
+  display: block;
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  word-break: break-all;
+}
+
+.relation-filter-item input {
+  margin-right: 6px;
+}
+
+.relation-filter-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.graph-controls .link-btn {
+  padding: 2px 6px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.graph-controls .link-btn:hover {
+  text-decoration: underline;
+  background: transparent;
+  border: none;
+}
+
+.graph-controls .primary-btn {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.graph-controls .primary-btn:hover {
+  background: #4a7de8;
+  border-color: #4a7de8;
+}
+
+.graph-error {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+  font-size: 15px;
+  text-align: center;
+  line-height: 1.6;
+  border: 2px dashed #fca5a5;
+}
+
+.graph-error.hidden {
+  display: none;
+}
+
 .graph-controls input[type="text"] {
   width: calc(100% - 58px);
   margin-right: 4px;

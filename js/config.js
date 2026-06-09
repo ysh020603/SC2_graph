@@ -79,3 +79,20 @@ export const EDGE_STYLES = {
 };
 
 export const DATA_URL = "./data_base_add_graph.json";
+
+/** Lazy-load entry nodes: one base structure per race. */
+export const LAZY_ROOT_IDS = ["Unit::CommandCenter", "Unit::Nexus", "Unit::Hatchery"];
+
+/** Hide node labels when zoom is below this threshold. */
+export const PERFORMANCE_ZOOM_THRESHOLD = 0.45;
+
+export const FIT_VIEW_PADDING = 40;
+
+/** Preset layout: combo sector centers for grid placement. */
+export const COMBO_LAYOUT_CENTERS = {
+  "combo-unit": { cx: 0, cy: -420 },
+  "combo-skill": { cx: -460, cy: 320 },
+  "combo-tech": { cx: 460, cy: 320 },
+};
+
+export const GRID_NODE_SPACING = 72;

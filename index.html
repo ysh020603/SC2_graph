@@ -12,7 +12,7 @@
       <header class="app-header">
         <div>
           <h1>SC2 知识图谱</h1>
-          <p class="subtitle">基于 data_base_add_graph.json · Combo 力导向布局 · 多维过滤</p>
+          <p class="subtitle">基于 data_base_add_graph.json · 预设网格布局 · 懒加载展开 · 关系多选高亮</p>
         </div>
         <div id="status-bar" class="status-bar">初始化中...</div>
       </header>
@@ -62,12 +62,22 @@
             </div>
 
             <div class="control-group">
-              <label for="edgeFilter">筛选关系类型:</label><br />
-              <select id="edgeFilter">
-                <option value="all">显示全部关系</option>
-              </select>
+              <label>高亮关系类型（可多选）:</label>
+              <div id="edgeFilterGroup" class="relation-filter-group">
+                <div class="relation-filter-actions">
+                  <button type="button" id="relationSelectAll" class="link-btn">全选</button>
+                  <button type="button" id="relationClearAll" class="link-btn">清空</button>
+                </div>
+                <div id="edgeFilterList" class="relation-filter-list"></div>
+                <p class="relation-filter-hint">未勾选时显示全部；勾选后高亮对应关系，其余置灰</p>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <button type="button" id="revealAllBtn" class="primary-btn">展开全部节点</button>
             </div>
           </div>
+          <div id="graph-error" class="graph-error hidden"></div>
           <div id="graph-canvas" class="graph-canvas"></div>
         </main>
 
