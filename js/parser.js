@@ -3,6 +3,7 @@ import {
   COMBO_CONFIG,
   COMBO_LAYOUT_CENTERS,
   GRID_NODE_SPACING,
+  RACE_COLORS,
   RELATION_LAYERS,
 } from "./config.js";
 
@@ -199,11 +200,22 @@ export function assignCombos(data) {
       node.comboId = combo.id;
     }
 
-    const fill = COLORS[node.kind] || "#FFFFFF";
-    node.style = {
-      fill,
-      stroke: fill,
-    };
+    if (node.kind === "Unit") {
+      const race = node.payload?.race;
+      const raceStyle = RACE_COLORS[race] || RACE_COLORS.Terran;
+      node.style = {
+        fill: raceStyle.fill,
+        stroke: raceStyle.stroke,
+        lineDash: raceStyle.lineDash,
+      };
+    } else {
+      const fill = COLORS[node.kind] || "#FFFFFF";
+      node.style = {
+        fill,
+        stroke: fill,
+        lineDash: null,
+      };
+    }
   });
 
   return data;

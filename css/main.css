@@ -128,6 +128,19 @@ body {
   border-radius: 50%;
 }
 
+.shape.rect.large {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.shape.diamond.large {
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
 .shape.square.small {
   width: 12px;
   height: 12px;
@@ -141,7 +154,19 @@ body {
 }
 
 .shape.terran {
-  background: #5b8ff9;
+  background: #1e3a8a;
+  border: 2px solid #2563eb;
+}
+
+.shape.protoss {
+  background: linear-gradient(135deg, #60a5fa, #1d4ed8);
+  border: 2px solid #60a5fa;
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.6);
+}
+
+.shape.zerg {
+  background: #312e81;
+  border: 2px dashed #6366f1;
 }
 
 .shape.upgrade {
@@ -186,6 +211,44 @@ body {
   width: 100%;
   height: 100%;
   background-color: #f4f6f8;
+}
+
+.graph-empty-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.graph-empty-prompt.hidden {
+  display: none;
+}
+
+.graph-empty-prompt-card {
+  max-width: 420px;
+  padding: 28px 32px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.08);
+  text-align: center;
+}
+
+.graph-empty-prompt-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.graph-empty-prompt-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
 }
 
 .graph-canvas.is-loading::after {

@@ -12,7 +12,7 @@
       <header class="app-header">
         <div>
           <h1>SC2 知识图谱</h1>
-          <p class="subtitle">基于 data_base_add_graph.json · 预设网格布局 · 懒加载展开 · 关系多选高亮</p>
+          <p class="subtitle">基于 data_base_add_graph.json · 预设网格布局 · 筛选驱动加载 · 关系边过滤</p>
         </div>
         <div id="status-bar" class="status-bar">初始化中...</div>
       </header>
@@ -42,7 +42,9 @@
 
           <section class="legend">
             <h2>图例</h2>
-            <div class="legend-item"><span class="shape circle large terran"></span> 单位 · 圆形 · 大</div>
+            <div class="legend-item"><span class="shape rect large terran"></span> 人族 · 圆角矩形 · 深蓝实线</div>
+            <div class="legend-item"><span class="shape diamond large protoss"></span> 神族 · 菱形 · 亮蓝渐变</div>
+            <div class="legend-item"><span class="shape circle large zerg"></span> 虫族 · 圆形 · 暗蓝虚线</div>
             <div class="legend-item"><span class="shape hex medium upgrade"></span> 科技 · 六边形 · 中</div>
             <div class="legend-item"><span class="shape square small ability"></span> 技能 · 方形 · 小</div>
             <div class="legend-item"><span class="line base"></span> 基础层</div>
@@ -62,14 +64,14 @@
             </div>
 
             <div class="control-group">
-              <label>高亮关系类型（可多选）:</label>
+              <label>关系筛选（可多选）:</label>
               <div id="edgeFilterGroup" class="relation-filter-group">
                 <div class="relation-filter-actions">
                   <button type="button" id="relationSelectAll" class="link-btn">全选</button>
                   <button type="button" id="relationClearAll" class="link-btn">清空</button>
                 </div>
                 <div id="edgeFilterList" class="relation-filter-list"></div>
-                <p class="relation-filter-hint">未勾选时显示全部；勾选后高亮对应关系，其余置灰</p>
+                <p class="relation-filter-hint">未勾选时显示全部关系；勾选后仅显示对应关系的边，孤立节点自动隐藏</p>
               </div>
             </div>
 
@@ -78,6 +80,12 @@
             </div>
           </div>
           <div id="graph-error" class="graph-error hidden"></div>
+          <div id="graph-empty-prompt" class="graph-empty-prompt">
+            <div class="graph-empty-prompt-card">
+              <p class="graph-empty-prompt-title">请在左侧选择筛选条件</p>
+              <p class="graph-empty-prompt-desc">在左侧调整种族、节点类型、关系层级或关系类型，也可点击「展开全部节点」加载完整图谱</p>
+            </div>
+          </div>
           <div id="graph-canvas" class="graph-canvas"></div>
         </main>
 

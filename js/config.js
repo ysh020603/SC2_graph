@@ -49,6 +49,13 @@ export const COLORS = {
   Unit: "#5B8FF9",
 };
 
+/** Blue-family colors and stroke styles per SC2 race (Unit nodes only). */
+export const RACE_COLORS = {
+  Terran: { fill: "#1E3A8A", stroke: "#2563EB", lineDash: null },
+  Protoss: { fill: "#3B82F6", stroke: "#60A5FA", lineDash: null },
+  Zerg: { fill: "#312E81", stroke: "#6366F1", lineDash: [4, 3] },
+};
+
 /** Combo ids and labels for ontology separation. */
 export const COMBO_CONFIG = {
   Unit: { id: "combo-unit", label: "单 位 (Units)" },
@@ -80,19 +87,19 @@ export const EDGE_STYLES = {
 
 export const DATA_URL = "./data_base_add_graph.json";
 
-/** Lazy-load entry nodes: one base structure per race. */
-export const LAZY_ROOT_IDS = ["Unit::CommandCenter", "Unit::Nexus", "Unit::Hatchery"];
+/** Lazy-load entry nodes; empty = blank canvas until user applies a filter. */
+export const LAZY_ROOT_IDS = [];
 
 /** Hide node labels when zoom is below this threshold. */
 export const PERFORMANCE_ZOOM_THRESHOLD = 0.45;
 
-export const FIT_VIEW_PADDING = 40;
+export const FIT_VIEW_PADDING = 60;
 
 /** Preset layout: combo sector centers for grid placement. */
 export const COMBO_LAYOUT_CENTERS = {
-  "combo-unit": { cx: 0, cy: -420 },
-  "combo-skill": { cx: -460, cy: 320 },
-  "combo-tech": { cx: 460, cy: 320 },
+  "combo-unit": { cx: 0, cy: -550 },
+  "combo-skill": { cx: -600, cy: 400 },
+  "combo-tech": { cx: 600, cy: 400 },
 };
 
-export const GRID_NODE_SPACING = 72;
+export const GRID_NODE_SPACING = 110;

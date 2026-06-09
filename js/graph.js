@@ -1,4 +1,12 @@
-import { COLORS, EDGE_STYLES, FIT_VIEW_PADDING, LAZY_ROOT_IDS, NODE_SIZE, PERFORMANCE_ZOOM_THRESHOLD } from "./config.js";
+import {
+  COLORS,
+  EDGE_STYLES,
+  FIT_VIEW_PADDING,
+  LAZY_ROOT_IDS,
+  NODE_SIZE,
+  PERFORMANCE_ZOOM_THRESHOLD,
+  RACE_COLORS,
+} from "./config.js";
 
 function nodeColor(kind) {
   return COLORS[kind] || "#5B8FF9";
@@ -57,10 +65,12 @@ function registerCustomNodes() {
             return;
           }
           if (name === "highlight") {
+            const model = item.getModel();
+            const defaultStroke = model.style?.stroke || nodeStroke(item, "#5B8FF9");
             shape.attr("lineWidth", value ? 4 : 2);
-            shape.attr("stroke", value ? "#FBBF24" : nodeStroke(item, "#5B8FF9"));
-            shape.attr("shadowColor", value ? "#FBBF24" : null);
-            shape.attr("shadowBlur", value ? 16 : 0);
+            shape.attr("stroke", value ? "#FBBF24" : defaultStroke);
+            shape.attr("shadowColor", value ? "#FBBF24" : model.raceStyle?.shadowBlur ? model.raceStyle.shadowColor : null);
+            shape.attr("shadowBlur", value ? 16 : model.raceStyle?.shadowBlur || 0);
           }
           if (name === "dim") {
             const opacity = value ? 0.12 : 1;
@@ -75,15 +85,55 @@ function registerCustomNodes() {
     );
   };
 
-  registerNodeType("unit-node", (cfg, group, size) =>
+  registerNodeType("terran-unit-node", (cfg, group, size) =>
+    group.addShape("rect", {
+      attrs: {
+        x: -size / 2,
+        y: -size / 2,
+        width: size,
+        height: size,
+        radius: 6,
+        fill: cfg.style?.fill || RACE_COLORS.Terran.fill,
+        stroke: cfg.style?.stroke || RACE_COLORS.Terran.stroke,
+        lineWidth: 2,
+        cursor: "pointer",
+      },
+      name: "key-shape",
+    }),
+  );
+
+  registerNodeType("protoss-unit-node", (cfg, group, size) => {
+    const radius = size / 2;
+    return group.addShape("path", {
+      attrs: {
+        path: [
+          ["M", 0, -radius],
+          ["L", radius, 0],
+          ["L", 0, radius],
+          ["L", -radius, 0],
+          ["Z"],
+        ],
+        fill: cfg.style?.fillGradient || `l(90) 0:${RACE_COLORS.Protoss.fill} 1:#1D4ED8`,
+        stroke: cfg.style?.stroke || RACE_COLORS.Protoss.stroke,
+        lineWidth: 2,
+        shadowColor: "#60A5FA",
+        shadowBlur: 10,
+        cursor: "pointer",
+      },
+      name: "key-shape",
+    });
+  });
+
+  registerNodeType("zerg-unit-node", (cfg, group, size) =>
     group.addShape("circle", {
       attrs: {
         x: 0,
         y: 0,
         r: size / 2,
-        fill: cfg.style?.fill || "#5B8FF9",
-        stroke: cfg.style?.stroke || "#5B8FF9",
+        fill: cfg.style?.fill || RACE_COLORS.Zerg.fill,
+        stroke: cfg.style?.stroke || RACE_COLORS.Zerg.stroke,
         lineWidth: 2,
+        lineDash: cfg.style?.lineDash || RACE_COLORS.Zerg.lineDash,
         cursor: "pointer",
       },
       name: "key-shape",
@@ -122,13 +172,25 @@ function registerCustomNodes() {
   });
 }
 
+function unitNodeType(race) {
+  const typeMap = {
+    Terran: "terran-unit-node",
+    Protoss: "protoss-unit-node",
+    Zerg: "zerg-unit-node",
+  };
+  return typeMap[race] || "terran-unit-node";
+}
+
 function buildNodeModel(node) {
   const kind = node.kind;
   const typeMap = {
-    Unit: "unit-node",
+    Unit: unitNodeType(node.payload?.race),
     Ability: "ability-node",
     Upgrade: "upgrade-node",
   };
+  const race = node.payload?.race;
+  const raceStyle = kind === "Unit" && race ? RACE_COLORS[race] : null;
+
   return {
     ...node,
     type: typeMap[kind],
@@ -136,9 +198,20 @@ function buildNodeModel(node) {
     label: "",
     displayLabel: node.label,
     showLabel: true,
+    raceStyle: raceStyle
+      ? {
+          shadowColor: race === "Protoss" ? "#60A5FA" : null,
+          shadowBlur: race === "Protoss" ? 10 : 0,
+        }
+      : null,
     style: {
       fill: node.style?.fill || nodeColor(kind),
       stroke: node.style?.stroke || nodeColor(kind),
+      lineDash: node.style?.lineDash ?? null,
+      fillGradient:
+        race === "Protoss"
+          ? `l(90) 0:${RACE_COLORS.Protoss.fill} 1:#1D4ED8`
+          : undefined,
     },
     labelCfg: {
       style: {
@@ -164,6 +237,15 @@ function buildEdgeModel(edge) {
       },
       cursor: "pointer",
     },
+    labelCfg: {
+      autoRotate: true,
+      style: {
+        fill: "#666666",
+        stroke: "#FFFFFF",
+        lineWidth: 3,
+        fontSize: 10,
+      },
+    },
     stateStyles: {
       highlight: {
         stroke: "#FBBF24",
@@ -171,9 +253,25 @@ function buildEdgeModel(edge) {
         shadowColor: "#FBBF24",
         shadowBlur: 8,
         opacity: 1,
+        labelCfg: {
+          style: {
+            fill: "#B45309",
+            stroke: "#FFFBEB",
+            opacity: 1,
+            fontWeight: 600,
+          },
+        },
       },
       dim: {
         opacity: 0.08,
+        labelCfg: {
+          style: {
+            fill: "#CBD5E1",
+            stroke: "transparent",
+            lineWidth: 0,
+            opacity: 0.12,
+          },
+        },
       },
     },
   };
@@ -188,6 +286,7 @@ function createFilterState() {
     manuallyHiddenIds: new Set(),
     lazyMode: true,
     revealedIds: new Set(LAZY_ROOT_IDS),
+    filterActivated: false,
   };
 }
 
@@ -248,7 +347,43 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     onStatus?.(`数据渲染错误：${message}`);
   }
 
+  let emptyPromptEl = null;
+
+  function getEmptyPromptEl() {
+    if (!emptyPromptEl) {
+      emptyPromptEl = document.getElementById("graph-empty-prompt");
+    }
+    return emptyPromptEl;
+  }
+
+  function updateEmptyPrompt() {
+    const prompt = getEmptyPromptEl();
+    if (!prompt) {
+      return;
+    }
+    prompt.classList.toggle("hidden", filterState.filterActivated);
+  }
+
+  function activateFilter() {
+    if (filterState.filterActivated) {
+      return;
+    }
+    filterState.filterActivated = true;
+    filterState.lazyMode = false;
+    filterState.revealedIds = new Set(nodes.map((node) => node.id));
+    updateEmptyPrompt();
+    if (graph) {
+      requestAnimationFrame(() => {
+        graph.fitView(FIT_VIEW_PADDING);
+      });
+    }
+    onStatus?.("筛选已应用 · 滚轮缩放 / 拖拽平移");
+  }
+
   function isNodeVisible(model) {
+    if (!filterState.filterActivated) {
+      return false;
+    }
     if (filterState.manuallyHiddenIds.has(model.id)) {
       return false;
     }
@@ -271,51 +406,31 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     if (!filterState.layers[model.layer]) {
       return false;
     }
-    return visibleNodeIds.has(model.source) && visibleNodeIds.has(model.target);
+    if (!visibleNodeIds.has(model.source) || !visibleNodeIds.has(model.target)) {
+      return false;
+    }
+    if (filterState.relationTypes.size > 0) {
+      const relation = model.relation || model.label;
+      if (!filterState.relationTypes.has(relation)) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  function applyRelationHighlight(visibleNodeIds) {
-    if (!graph) {
+  function hideIsolatedNodes(visibleNodeIds) {
+    if (filterState.relationTypes.size === 0 || !graph) {
       return;
     }
 
-    const activeRelations = filterState.relationTypes;
-    const hasRelationFilter = activeRelations.size > 0;
-
-    if (!hasRelationFilter) {
-      graph.getEdges().forEach((edge) => {
-        if (edge.isVisible?.() === false) {
-          return;
-        }
-        graph.clearItemStates(edge, ["highlight", "dim"]);
-      });
-      graph.getNodes().forEach((node) => {
-        if (node.isVisible?.() === false) {
-          return;
-        }
-        graph.clearItemStates(node, ["highlight", "dim"]);
-      });
-      return;
-    }
-
-    const highlightedNodeIds = new Set();
-
+    const nodesWithEdges = new Set();
     graph.getEdges().forEach((edge) => {
       if (edge.isVisible?.() === false) {
         return;
       }
       const model = edge.getModel();
-      const relation = model.relation || model.label;
-      const matches = activeRelations.has(relation);
-
-      graph.clearItemStates(edge, ["highlight", "dim"]);
-      if (matches) {
-        graph.setItemState(edge, "highlight", true);
-        highlightedNodeIds.add(model.source);
-        highlightedNodeIds.add(model.target);
-      } else {
-        graph.setItemState(edge, "dim", true);
-      }
+      nodesWithEdges.add(model.source);
+      nodesWithEdges.add(model.target);
     });
 
     graph.getNodes().forEach((node) => {
@@ -323,11 +438,79 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
         return;
       }
       const nodeId = node.getID();
+      if (!nodesWithEdges.has(nodeId)) {
+        graph.hideItem(node);
+        visibleNodeIds.delete(nodeId);
+      }
+    });
+  }
+
+  function clearRelationDimStates() {
+    if (!graph) {
+      return;
+    }
+    graph.getEdges().forEach((edge) => {
+      graph.clearItemStates(edge, ["highlight", "dim"]);
+    });
+    graph.getNodes().forEach((node) => {
       graph.clearItemStates(node, ["highlight", "dim"]);
-      if (highlightedNodeIds.has(nodeId)) {
-        graph.setItemState(node, "highlight", true);
-      } else if (visibleNodeIds.has(nodeId)) {
-        graph.setItemState(node, "dim", true);
+    });
+    applyEdgeLabelStates();
+  }
+
+  function findEdgeLabelShape(edge) {
+    const group = edge.getContainer();
+    if (!group) {
+      return null;
+    }
+    const named = group.find((element) => element.get("name") === "text-shape");
+    if (named) {
+      return named;
+    }
+    const children = group.get("children") || [];
+    return children.find((child) => child.get("type") === "text") || null;
+  }
+
+  function applyEdgeLabelStates() {
+    if (!graph) {
+      return;
+    }
+
+    graph.getEdges().forEach((edge) => {
+      if (edge.isVisible?.() === false) {
+        return;
+      }
+      const label = findEdgeLabelShape(edge);
+      if (!label) {
+        return;
+      }
+
+      const isDimmed = edge.hasState("dim");
+      const isHighlighted = edge.hasState("highlight");
+
+      if (isDimmed) {
+        label.attr({
+          opacity: 0.12,
+          fill: "#CBD5E1",
+          stroke: "transparent",
+          lineWidth: 0,
+        });
+      } else if (isHighlighted) {
+        label.attr({
+          opacity: 1,
+          fill: "#B45309",
+          stroke: "#FFFBEB",
+          lineWidth: 2,
+          fontWeight: 600,
+        });
+      } else {
+        label.attr({
+          opacity: 1,
+          fill: "#666666",
+          stroke: "#FFFFFF",
+          lineWidth: 3,
+          fontWeight: "normal",
+        });
       }
     });
   }
@@ -348,6 +531,24 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       const isDimmed = node.hasState("dim");
       label.attr("opacity", hideLabels || isDimmed ? (isDimmed ? 0.12 : 0) : 1);
     });
+
+    applyEdgeLabelStates();
+
+    if (hideLabels) {
+      graph.getEdges().forEach((edge) => {
+        if (edge.isVisible?.() === false) {
+          return;
+        }
+        const label = findEdgeLabelShape(edge);
+        if (!label) {
+          return;
+        }
+        if (edge.hasState("highlight")) {
+          return;
+        }
+        label.attr("opacity", edge.hasState("dim") ? 0 : 0);
+      });
+    }
   }
 
   function applyFilters() {
@@ -375,13 +576,19 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       }
     });
 
+    hideIsolatedNodes(visibleNodeIds);
+
     if (selectedItem && (selectedItem.destroyed || !selectedItem.isVisible?.())) {
       detailsPanel.showPlaceholder();
       selectedItem = null;
     }
 
-    applyRelationHighlight(visibleNodeIds);
+    if (!selectedItem) {
+      clearRelationDimStates();
+    }
+
     applyPerformanceMode();
+    updateEmptyPrompt();
   }
 
   function clearSelectionHighlight() {
@@ -479,6 +686,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   }
 
   function revealAllNodes() {
+    activateFilter();
     filterState.lazyMode = false;
     filterState.revealedIds = new Set(nodes.map((node) => node.id));
     applyFilters();
@@ -506,8 +714,11 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
         console.warn("fitView 失败", fitError);
       }
       applyFilters();
+      updateEmptyPrompt();
       onStatus?.(
-        `${reason} · ${graphData.stats.nodeCount} 个节点 · ${graphData.stats.edgeCount} 条边 · 滚轮缩放 / 拖拽平移`,
+        filterState.filterActivated
+          ? `${reason} · ${graphData.stats.nodeCount} 个节点 · ${graphData.stats.edgeCount} 条边 · 滚轮缩放 / 拖拽平移`
+          : `数据已就绪 · 请在左侧选择种族、节点类型或关系筛选条件`,
       );
       container.classList.remove("is-loading");
     }
@@ -572,7 +783,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       graphConfig.layout = {
         type: "grid",
         preventOverlap: true,
-        nodeSize: 40,
+        nodeSize: 56,
         workerEnabled: true,
         onLayoutEnd: () => finishLayout("网格布局完成"),
       };
@@ -683,6 +894,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   function bindFilters(filterRoot) {
     filterRoot.querySelectorAll("[data-filter-kind]").forEach((input) => {
       input.addEventListener("change", () => {
+        activateFilter();
         filterState.kinds[input.value] = input.checked;
         applyFilters();
       });
@@ -690,6 +902,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
 
     filterRoot.querySelectorAll("[data-filter-race]").forEach((input) => {
       input.addEventListener("change", () => {
+        activateFilter();
         filterState.races[input.value] = input.checked;
         applyFilters();
       });
@@ -697,6 +910,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
 
     filterRoot.querySelectorAll("[data-filter-layer]").forEach((input) => {
       input.addEventListener("change", () => {
+        activateFilter();
         filterState.layers[input.value] = input.checked;
         applyFilters();
       });
@@ -712,6 +926,9 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       const selected = [
         ...relationRoot.querySelectorAll("[data-filter-relation]:checked"),
       ].map((input) => input.value);
+      if (selected.length > 0) {
+        activateFilter();
+      }
       filterState.relationTypes = new Set(selected);
       applyFilters();
     };
@@ -761,10 +978,14 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   function filterEdgeTypes(selectedRelations) {
     if (Array.isArray(selectedRelations)) {
       filterState.relationTypes = new Set(selectedRelations);
+      if (selectedRelations.length > 0) {
+        activateFilter();
+      }
     } else if (selectedRelations === "all" || !selectedRelations) {
       filterState.relationTypes = new Set();
     } else {
       filterState.relationTypes = new Set([selectedRelations]);
+      activateFilter();
     }
     applyFilters();
   }
