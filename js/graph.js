@@ -1,18 +1,11 @@
-import {
-  COLORS,
-  EDGE_STYLES,
-  NODE_SIZE,
-} from "./config.js";
+import { COLORS, EDGE_STYLES, NODE_SIZE } from "./config.js";
 
-function nodeColor(kind, payload) {
-  if (kind === "Ability") {
-    return COLORS.Ability;
-  }
-  if (kind === "Upgrade") {
-    return COLORS.Upgrade;
-  }
-  const race = payload?.race || "Terran";
-  return COLORS.Unit[race] || COLORS.Unit.Terran;
+function nodeColor(kind) {
+  return COLORS[kind] || "#5B8FF9";
+}
+
+function nodeStroke(item, fallback) {
+  return item.getModel().style?.stroke || fallback;
 }
 
 function hexPoints(size) {
@@ -43,9 +36,9 @@ function registerCustomNodes() {
             x: 0,
             y: 0,
             r: size / 2,
-            fill: cfg.style?.fill || "#1E40AF",
-            stroke: "#E5E7EB",
-            lineWidth: 1.5,
+            fill: cfg.style?.fill || "#5B8FF9",
+            stroke: cfg.style?.stroke || "#5B8FF9",
+            lineWidth: 2,
             cursor: "pointer",
           },
           name: "key-shape",
@@ -57,7 +50,7 @@ function registerCustomNodes() {
             y: size / 2 + 14,
             textAlign: "center",
             textBaseline: "top",
-            fill: "#CBD5E1",
+            fill: "#333333",
             fontSize: 10,
           },
           name: "label-shape",
@@ -72,8 +65,8 @@ function registerCustomNodes() {
           return;
         }
         if (name === "highlight") {
-          shape.attr("lineWidth", value ? 4 : 1.5);
-          shape.attr("stroke", value ? "#FBBF24" : "#E5E7EB");
+          shape.attr("lineWidth", value ? 4 : 2);
+          shape.attr("stroke", value ? "#FBBF24" : nodeStroke(item, "#5B8FF9"));
           shape.attr("shadowColor", value ? "#FBBF24" : null);
           shape.attr("shadowBlur", value ? 16 : 0);
         }
@@ -102,8 +95,8 @@ function registerCustomNodes() {
             height: size,
             radius: 4,
             fill: cfg.style?.fill || COLORS.Ability,
-            stroke: "#E5E7EB",
-            lineWidth: 1.5,
+            stroke: cfg.style?.stroke || COLORS.Ability,
+            lineWidth: 2,
             cursor: "pointer",
           },
           name: "key-shape",
@@ -115,7 +108,7 @@ function registerCustomNodes() {
             y: size / 2 + 14,
             textAlign: "center",
             textBaseline: "top",
-            fill: "#CBD5E1",
+            fill: "#333333",
             fontSize: 10,
           },
           name: "label-shape",
@@ -130,8 +123,8 @@ function registerCustomNodes() {
           return;
         }
         if (name === "highlight") {
-          shape.attr("lineWidth", value ? 4 : 1.5);
-          shape.attr("stroke", value ? "#FBBF24" : "#E5E7EB");
+          shape.attr("lineWidth", value ? 4 : 2);
+          shape.attr("stroke", value ? "#FBBF24" : nodeStroke(item, "#5B8FF9"));
           shape.attr("shadowColor", value ? "#FBBF24" : null);
           shape.attr("shadowBlur", value ? 16 : 0);
         }
@@ -156,8 +149,8 @@ function registerCustomNodes() {
           attrs: {
             points: hexPoints(size),
             fill: cfg.style?.fill || COLORS.Upgrade,
-            stroke: "#E5E7EB",
-            lineWidth: 1.5,
+            stroke: cfg.style?.stroke || COLORS.Upgrade,
+            lineWidth: 2,
             cursor: "pointer",
           },
           name: "key-shape",
@@ -169,7 +162,7 @@ function registerCustomNodes() {
             y: size + 14,
             textAlign: "center",
             textBaseline: "top",
-            fill: "#CBD5E1",
+            fill: "#333333",
             fontSize: 10,
           },
           name: "label-shape",
@@ -184,8 +177,8 @@ function registerCustomNodes() {
           return;
         }
         if (name === "highlight") {
-          shape.attr("lineWidth", value ? 4 : 1.5);
-          shape.attr("stroke", value ? "#FBBF24" : "#E5E7EB");
+          shape.attr("lineWidth", value ? 4 : 2);
+          shape.attr("stroke", value ? "#FBBF24" : nodeStroke(item, "#5B8FF9"));
           shape.attr("shadowColor", value ? "#FBBF24" : null);
           shape.attr("shadowBlur", value ? 16 : 0);
         }
@@ -216,11 +209,12 @@ function buildNodeModel(node) {
     label: "",
     displayLabel: node.label,
     style: {
-      fill: nodeColor(kind, node.payload),
+      fill: node.style?.fill || nodeColor(kind),
+      stroke: node.style?.stroke || nodeColor(kind),
     },
     labelCfg: {
       style: {
-        fill: "#CBD5E1",
+        fill: "#333333",
         fontSize: 10,
       },
     },
@@ -262,6 +256,8 @@ function createFilterState() {
     kinds: { Ability: true, Unit: true, Upgrade: true },
     races: { Terran: true, Protoss: true, Zerg: true },
     layers: { base: true, inferred: true, semantic: true },
+    relationType: "all",
+    manuallyHiddenIds: new Set(),
   };
 }
 
@@ -293,6 +289,9 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   const edges = graphData.edges.map(buildEdgeModel);
 
   function isNodeVisible(model) {
+    if (filterState.manuallyHiddenIds.has(model.id)) {
+      return false;
+    }
     if (!filterState.kinds[model.kind]) {
       return false;
     }
@@ -308,6 +307,12 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
   function isEdgeVisible(model, visibleNodeIds) {
     if (!filterState.layers[model.layer]) {
       return false;
+    }
+    if (filterState.relationType !== "all") {
+      const relationType = model.relation || model.label;
+      if (relationType !== filterState.relationType) {
+        return false;
+      }
     }
     return visibleNodeIds.has(model.source) && visibleNodeIds.has(model.target);
   }
@@ -433,19 +438,64 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       fitView: false,
       animate: false,
       modes: {
-        default: ["drag-canvas", "zoom-canvas", "drag-node"],
+        default: ["drag-canvas", "zoom-canvas", "drag-node", "drag-combo"],
       },
       layout: {
-        type: "forceAtlas2",
+        type: "comboForce",
         preventOverlap: true,
-        kr: 8,
-        kg: 1,
+        nodeSpacing: 15,
+        comboSpacing: 40,
+        maxIteration: 300,
+        alpha: 0.3,
+        alphaDecay: 0.028,
         nodeSize: (node) => (node.size || 24) + 8,
         workerEnabled: false,
         onLayoutEnd: () => finishLayout("布局完成"),
       },
+      defaultNode: {
+        style: {
+          fill: "#FFFFFF",
+          stroke: "#5B8FF9",
+          lineWidth: 2,
+        },
+        labelCfg: {
+          style: {
+            fill: "#333333",
+            fontSize: 12,
+          },
+        },
+      },
       defaultEdge: {
         type: "line",
+        style: {
+          stroke: "#A3B1BF",
+          lineWidth: 1,
+        },
+        labelCfg: {
+          autoRotate: true,
+          style: {
+            fill: "#666666",
+            stroke: "#FFFFFF",
+            lineWidth: 3,
+          },
+        },
+      },
+      defaultCombo: {
+        type: "rect",
+        style: {
+          fillOpacity: 0.05,
+          stroke: "#ccc",
+          lineWidth: 1,
+        },
+        labelCfg: {
+          position: "top",
+          refY: 5,
+          style: {
+            fontSize: 16,
+            fontWeight: "bold",
+            fill: "#666666",
+          },
+        },
       },
     });
 
@@ -453,7 +503,7 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       labelCfg: {
         position: "bottom",
         style: {
-          fill: "#94A3B8",
+          fill: "#333333",
           fontSize: 10,
         },
       },
@@ -465,17 +515,13 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       },
     }));
 
-    graph.data({ nodes, edges });
-    onStatus?.("力导向布局计算中，请稍候...");
-    graph.render();
+    graph.data({
+      nodes,
+      edges,
+      combos: graphData.combos || [],
+    });
 
     graph.on("afterlayout", () => finishLayout("布局完成"));
-
-    window.setTimeout(() => {
-      if (!layoutFinished) {
-        finishLayout("布局超时，已强制显示");
-      }
-    }, 20000);
 
     graph.on("node:click", (event) => {
       event.stopPropagation?.();
@@ -499,6 +545,55 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       const nextSize = getContainerSize(container);
       graph.changeSize(nextSize.width, nextSize.height);
       graph.fitView(40);
+    });
+
+    onStatus?.("Combo 力导向布局计算中，请稍候...");
+
+    window.setTimeout(() => {
+      if (layoutFinished || !graph || graph.get("destroyed")) {
+        return;
+      }
+      if (typeof graph.stopLayout === "function") {
+        graph.stopLayout();
+      }
+      finishLayout("布局超时，已强制显示");
+    }, 15000);
+
+    requestAnimationFrame(() => {
+      try {
+        graph.render();
+      } catch (error) {
+        console.warn("comboForce 渲染失败，回退到 forceAtlas2 布局", error);
+        try {
+          graph.updateLayout({
+            type: "forceAtlas2",
+            preventOverlap: true,
+            kr: 8,
+            kg: 1,
+            maxIteration: 300,
+            nodeSize: (node) => (node.size || 24) + 8,
+            workerEnabled: false,
+            onLayoutEnd: () => finishLayout("布局完成"),
+          });
+          graph.render();
+        } catch (fallbackError) {
+          container.classList.remove("is-loading");
+          onStatus?.(`图谱渲染失败：${fallbackError.message}`);
+        }
+      }
+    });
+  }
+
+  function start() {
+    return new Promise((resolve, reject) => {
+      requestAnimationFrame(() => {
+        try {
+          initGraph();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   }
 
@@ -525,12 +620,43 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     });
   }
 
-  initGraph();
+  function hideSpecificNode(nodeValue) {
+    const value = String(nodeValue || "").trim();
+    if (!value || !graph) {
+      return false;
+    }
+
+    let itemToHide = graph.findById(value);
+    if (!itemToHide) {
+      itemToHide = graph.find("node", (node) => {
+        const model = node.getModel();
+        return model.label === value || model.displayLabel === value || model.name === value;
+      });
+    }
+
+    if (!itemToHide) {
+      return false;
+    }
+
+    filterState.manuallyHiddenIds.add(itemToHide.getID());
+    applyFilters();
+    return true;
+  }
+
+  function filterEdgeTypes(selectedRelation) {
+    filterState.relationType = selectedRelation || "all";
+    applyFilters();
+  }
 
   return {
-    graph,
+    get graph() {
+      return graph;
+    },
+    start,
     applyFilters,
     bindFilters,
     clearHighlight,
+    hideSpecificNode,
+    filterEdgeTypes,
   };
 }

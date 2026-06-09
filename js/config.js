@@ -42,15 +42,18 @@ export const NODE_SIZE = {
   Ability: 20,
 };
 
-/** Fill colors per blueprint. */
+/** Fill colors per entity kind (light theme). */
 export const COLORS = {
-  Ability: "#F59E0B",
-  Upgrade: "#9333EA",
-  Unit: {
-    Terran: "#1E40AF",
-    Protoss: "#38BDF8",
-    Zerg: "#312E81",
-  },
+  Ability: "#5AD8A6",
+  Upgrade: "#F6BD16",
+  Unit: "#5B8FF9",
+};
+
+/** Combo ids and labels for ontology separation. */
+export const COMBO_CONFIG = {
+  Unit: { id: "combo-unit", label: "单 位 (Units)" },
+  Ability: { id: "combo-skill", label: "技 能 (Skills)" },
+  Upgrade: { id: "combo-tech", label: "科 技 (Tech)" },
 };
 
 /** Edge styles per layer. */

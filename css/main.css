@@ -1,11 +1,11 @@
 :root {
-  color-scheme: dark;
-  --bg: #0f172a;
-  --panel: #111827;
-  --panel-border: #1f2937;
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
+  color-scheme: light;
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --panel-border: #e2e8f0;
+  --text: #333333;
+  --muted: #64748b;
+  --accent: #5b8ff9;
 }
 
 * {
@@ -34,12 +34,13 @@ body {
   gap: 16px;
   padding: 14px 20px;
   border-bottom: 1px solid var(--panel-border);
-  background: #0b1220;
+  background: #ffffff;
 }
 
 .app-header h1 {
   margin: 0;
   font-size: 20px;
+  color: #1e293b;
 }
 
 .subtitle {
@@ -68,7 +69,7 @@ body {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at center, #111827 0%, #020617 100%);
+  background: #f4f6f8;
 }
 
 .filter-panel,
@@ -140,15 +141,15 @@ body {
 }
 
 .shape.terran {
-  background: #1e40af;
+  background: #5b8ff9;
 }
 
 .shape.upgrade {
-  background: #9333ea;
+  background: #f6bd16;
 }
 
 .shape.ability {
-  background: #f59e0b;
+  background: #5ad8a6;
 }
 
 .line {
@@ -159,7 +160,7 @@ body {
 }
 
 .line.base {
-  border-top-color: #9ca3af;
+  border-top-color: #a3b1bf;
 }
 
 .line.inferred {
@@ -184,6 +185,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
+  background-color: #f4f6f8;
 }
 
 .graph-canvas.is-loading::after {
@@ -193,10 +195,73 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(2, 6, 23, 0.72);
+  background: rgba(244, 246, 248, 0.85);
   color: var(--accent);
   font-size: 15px;
   pointer-events: none;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--panel-border);
+  min-width: 220px;
+}
+
+.graph-controls h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.graph-controls .control-group {
+  margin-bottom: 10px;
+}
+
+.graph-controls label {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.graph-controls input[type="text"],
+.graph-controls select {
+  padding: 4px 6px;
+  margin-top: 5px;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text);
+  background: #fff;
+}
+
+.graph-controls select {
+  width: 100%;
+}
+
+.graph-controls input[type="text"] {
+  width: calc(100% - 58px);
+  margin-right: 4px;
+}
+
+.graph-controls button {
+  padding: 4px 8px;
+  cursor: pointer;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.graph-controls button:hover {
+  background: #f1f5f9;
+  border-color: var(--accent);
 }
 
 .placeholder {
@@ -232,7 +297,7 @@ body {
 .detail-table th {
   width: 42%;
   color: var(--muted);
-  background: #0b1220;
+  background: #f8fafc;
   font-weight: 500;
 }
 
@@ -248,7 +313,7 @@ body {
   padding: 10px;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  background: #0b1220;
+  background: #f8fafc;
   line-height: 1.6;
   font-size: 13px;
 }
@@ -268,5 +333,12 @@ body {
   .filter-panel,
   .details-panel {
     max-height: 220px;
+  }
+
+  .graph-controls {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    min-width: 0;
   }
 }

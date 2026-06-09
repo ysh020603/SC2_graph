@@ -12,7 +12,7 @@
       <header class="app-header">
         <div>
           <h1>SC2 知识图谱</h1>
-          <p class="subtitle">基于 data_base_add_graph.json · 力导向布局 · 多维过滤</p>
+          <p class="subtitle">基于 data_base_add_graph.json · Combo 力导向布局 · 多维过滤</p>
         </div>
         <div id="status-bar" class="status-bar">初始化中...</div>
       </header>
@@ -52,6 +52,22 @@
         </aside>
 
         <main class="canvas-panel">
+          <div id="graph-controls" class="graph-controls">
+            <h3>图谱过滤器</h3>
+
+            <div class="control-group">
+              <label for="hideNodeInput">隐藏指定节点:</label><br />
+              <input type="text" id="hideNodeInput" placeholder="输入节点 ID 或名称" />
+              <button type="button" id="hideNodeBtn">隐藏</button>
+            </div>
+
+            <div class="control-group">
+              <label for="edgeFilter">筛选关系类型:</label><br />
+              <select id="edgeFilter">
+                <option value="all">显示全部关系</option>
+              </select>
+            </div>
+          </div>
           <div id="graph-canvas" class="graph-canvas"></div>
         </main>
 

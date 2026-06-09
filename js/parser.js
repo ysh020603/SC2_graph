@@ -1,4 +1,4 @@
-import { RELATION_LAYERS } from "./config.js";
+import { COLORS, COMBO_CONFIG, RELATION_LAYERS } from "./config.js";
 
 const KINDS = ["Unit", "Ability", "Upgrade"];
 
@@ -77,5 +77,32 @@ export function parseGraphData(raw) {
     }
   }
 
-  return { nodes, edges, stats: { nodeCount: nodes.length, edgeCount: edges.length } };
+  const graphData = {
+    nodes,
+    edges,
+    stats: { nodeCount: nodes.length, edgeCount: edges.length },
+  };
+
+  assignCombos(graphData);
+  return graphData;
+}
+
+/** Assign G6 combos and per-kind colors for ontology separation. */
+export function assignCombos(data) {
+  data.combos = Object.values(COMBO_CONFIG).map(({ id, label }) => ({ id, label }));
+
+  data.nodes.forEach((node) => {
+    const combo = COMBO_CONFIG[node.kind];
+    if (combo) {
+      node.comboId = combo.id;
+    }
+
+    const fill = COLORS[node.kind] || "#FFFFFF";
+    node.style = {
+      fill,
+      stroke: fill,
+    };
+  });
+
+  return data;
 }
