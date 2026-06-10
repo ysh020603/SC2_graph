@@ -287,6 +287,8 @@ function createFilterState() {
     lazyMode: true,
     revealedIds: new Set(LAZY_ROOT_IDS),
     filterActivated: false,
+    neighborsOnly: false,
+    neighborsOnlyCenterId: null,
   };
 }
 
@@ -399,6 +401,15 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
       const race = model.payload?.race;
       if (race && !filterState.races[race]) {
         return false;
+      }
+    }
+    if (filterState.neighborsOnly && filterState.neighborsOnlyCenterId) {
+      const centerId = filterState.neighborsOnlyCenterId;
+      if (model.id !== centerId) {
+        const neighbors = neighborMap.get(centerId);
+        if (!neighbors?.has(model.id)) {
+          return false;
+        }
       }
     }
     return true;
@@ -599,18 +610,26 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     }
     selectedItem = null;
     entityFocusActive = false;
+    filterState.neighborsOnlyCenterId = null;
     applyFilters();
   }
 
   function syncFilterCheckboxes() {
-    if (!filterRootEl) {
-      return;
-    }
-    filterRootEl.querySelectorAll("[data-filter-kind]").forEach((input) => {
+    document.querySelectorAll("[data-filter-kind]").forEach((input) => {
       input.checked = filterState.kinds[input.value];
     });
-    filterRootEl.querySelectorAll("[data-filter-race]").forEach((input) => {
+    document.querySelectorAll("[data-filter-race]").forEach((input) => {
       input.checked = filterState.races[input.value];
+    });
+    document.querySelectorAll("[data-filter-layer]").forEach((input) => {
+      input.checked = filterState.layers[input.value];
+    });
+    const neighborsToggle = document.getElementById("neighborsOnlyToggle");
+    if (neighborsToggle) {
+      neighborsToggle.checked = filterState.neighborsOnly;
+    }
+    document.querySelectorAll("[data-filter-relation]").forEach((input) => {
+      input.checked = filterState.relationTypes.has(input.value);
     });
   }
 
@@ -816,6 +835,10 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     selectedItem = centerNode;
 
     const centerId = centerNode.getID();
+    filterState.neighborsOnlyCenterId = centerId;
+    if (filterState.neighborsOnly) {
+      applyFilters();
+    }
     const neighborIds = new Set([centerId]);
 
     graph.getEdges().forEach((edge) => {
@@ -1105,31 +1128,60 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     });
   }
 
+  function bindCheckboxGroup(selector, stateKey) {
+    document.querySelectorAll(selector).forEach((input) => {
+      input.addEventListener("change", () => {
+        activateFilter();
+        const { value, checked } = input;
+        filterState[stateKey][value] = checked;
+        document.querySelectorAll(`${selector}[value="${CSS.escape(value)}"]`).forEach((el) => {
+          el.checked = checked;
+        });
+        applyFilters();
+      });
+    });
+  }
+
   function bindFilters(filterRoot) {
     filterRootEl = filterRoot;
-    filterRoot.querySelectorAll("[data-filter-kind]").forEach((input) => {
-      input.addEventListener("change", () => {
-        activateFilter();
-        filterState.kinds[input.value] = input.checked;
-        applyFilters();
-      });
-    });
+    bindCheckboxGroup("[data-filter-kind]", "kinds");
+    bindCheckboxGroup("[data-filter-race]", "races");
+    bindCheckboxGroup("[data-filter-layer]", "layers");
+  }
 
-    filterRoot.querySelectorAll("[data-filter-race]").forEach((input) => {
-      input.addEventListener("change", () => {
-        activateFilter();
-        filterState.races[input.value] = input.checked;
-        applyFilters();
-      });
+  function bindAdvancedFilters() {
+    const neighborsToggle = document.getElementById("neighborsOnlyToggle");
+    neighborsToggle?.addEventListener("change", () => {
+      filterState.neighborsOnly = neighborsToggle.checked;
+      if (filterState.neighborsOnly && !filterState.neighborsOnlyCenterId && selectedItem?.getType?.() === "node") {
+        filterState.neighborsOnlyCenterId = selectedItem.getID();
+      }
+      if (!filterState.neighborsOnly) {
+        filterState.neighborsOnlyCenterId = selectedItem?.getType?.() === "node" ? selectedItem.getID() : null;
+      }
+      activateFilter();
+      applyFilters();
+      if (filterState.neighborsOnly && !filterState.neighborsOnlyCenterId) {
+        onStatus?.("请先在图谱中点击一个节点，再启用邻居筛选");
+      }
     });
+  }
 
-    filterRoot.querySelectorAll("[data-filter-layer]").forEach((input) => {
-      input.addEventListener("change", () => {
-        activateFilter();
-        filterState.layers[input.value] = input.checked;
-        applyFilters();
-      });
-    });
+  function resetAllFilters() {
+    filterState.kinds = { Ability: true, Unit: true, Upgrade: true };
+    filterState.races = { Terran: true, Protoss: true, Zerg: true };
+    filterState.layers = { base: true, inferred: true, semantic: true };
+    filterState.relationTypes = new Set();
+    filterState.manuallyHiddenIds = new Set();
+    filterState.neighborsOnly = false;
+    filterState.neighborsOnlyCenterId = null;
+    if (filterState.filterActivated) {
+      filterState.lazyMode = false;
+      filterState.revealedIds = new Set(nodes.map((node) => node.id));
+    }
+    syncFilterCheckboxes();
+    applyFilters();
+    onStatus?.("筛选条件已重置");
   }
 
   function bindRelationFilters(relationRoot) {
@@ -1213,6 +1265,8 @@ export function createGraphApp(container, graphData, detailsPanel, onStatus) {
     applyFilters,
     bindFilters,
     bindRelationFilters,
+    bindAdvancedFilters,
+    resetAllFilters,
     clearHighlight: clearSelectionHighlight,
     hideSpecificNode,
     filterEdgeTypes,

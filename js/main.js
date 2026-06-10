@@ -64,6 +64,7 @@ function bindGraphControls(app) {
   const hideNodeInput = document.getElementById("hideNodeInput");
   const hideNodeBtn = document.getElementById("hideNodeBtn");
   const revealAllBtn = document.getElementById("revealAllBtn");
+  const filterResetBtn = document.getElementById("filterResetBtn");
 
   hideNodeBtn?.addEventListener("click", () => {
     const nodeValue = hideNodeInput?.value.trim();
@@ -89,6 +90,10 @@ function bindGraphControls(app) {
 
   revealAllBtn?.addEventListener("click", () => {
     app.revealAllNodes();
+  });
+
+  filterResetBtn?.addEventListener("click", () => {
+    app.resetAllFilters();
   });
 
   window.hideSpecificNode = () => {
@@ -125,6 +130,8 @@ async function bootstrap() {
   const filterRoot = document.querySelector("#filter-panel");
   const detailsRoot = document.querySelector("#details-panel");
   const edgeFilterGroup = document.querySelector("#edgeFilterGroup");
+
+  window.syncLayoutVars?.();
 
   if (window.location.protocol === "file:") {
     showBootstrapError(
@@ -176,6 +183,7 @@ async function bootstrap() {
     });
     app.bindFilters(filterRoot);
     app.bindRelationFilters(edgeFilterGroup);
+    app.bindAdvancedFilters();
     bindGraphControls(app);
     initQueryControls(graphData, app);
     await app.start();

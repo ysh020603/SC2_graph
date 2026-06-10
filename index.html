@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SC2 知识图谱</title>
-    <link rel="stylesheet" href="./css/main.css" />
+    <link rel="stylesheet" href="./css/main.css?v=3" />
     <script src="./vendor/g6.min.js"></script>
   </head>
   <body>
@@ -19,112 +19,48 @@
 
       <div class="app-body">
         <aside id="filter-panel" class="filter-panel">
-          <section>
-            <h2>节点类型</h2>
-            <label><input type="checkbox" data-filter-kind value="Ability" checked /> 技能 (Ability)</label>
-            <label><input type="checkbox" data-filter-kind value="Unit" checked /> 单位 (Unit)</label>
-            <label><input type="checkbox" data-filter-kind value="Upgrade" checked /> 科技 (Upgrade)</label>
-          </section>
+          <div class="filter-panel-scroll">
+            <section>
+              <h2>节点类型</h2>
+              <label><input type="checkbox" data-filter-kind value="Ability" checked /> 技能 (Ability)</label>
+              <label><input type="checkbox" data-filter-kind value="Unit" checked /> 单位 (Unit)</label>
+              <label><input type="checkbox" data-filter-kind value="Upgrade" checked /> 科技 (Upgrade)</label>
+            </section>
 
-          <section>
-            <h2>种族（单位）</h2>
-            <label><input type="checkbox" data-filter-race value="Terran" checked /> 人族 (Terran)</label>
-            <label><input type="checkbox" data-filter-race value="Protoss" checked /> 神族 (Protoss)</label>
-            <label><input type="checkbox" data-filter-race value="Zerg" checked /> 虫族 (Zerg)</label>
-          </section>
+            <section>
+              <h2>种族（单位）</h2>
+              <label><input type="checkbox" data-filter-race value="Terran" checked /> 人族 (Terran)</label>
+              <label><input type="checkbox" data-filter-race value="Protoss" checked /> 神族 (Protoss)</label>
+              <label><input type="checkbox" data-filter-race value="Zerg" checked /> 虫族 (Zerg)</label>
+            </section>
 
-          <section>
-            <h2>关系层级</h2>
-            <label><input type="checkbox" data-filter-layer value="base" checked /> 基础层 · 实线灰</label>
-            <label><input type="checkbox" data-filter-layer value="inferred" checked /> 推理层 · 粗虚线绿</label>
-            <label><input type="checkbox" data-filter-layer value="semantic" checked /> 语义层 · 点划线红</label>
-          </section>
+            <section>
+              <h2>关系层级</h2>
+              <label><input type="checkbox" data-filter-layer value="base" checked /> 基础层 · 实线灰</label>
+              <label><input type="checkbox" data-filter-layer value="inferred" checked /> 推理层 · 粗虚线绿</label>
+              <label><input type="checkbox" data-filter-layer value="semantic" checked /> 语义层 · 点划线红</label>
+            </section>
 
-          <section class="legend">
-            <h2>图例</h2>
-            <div class="legend-item"><span class="shape rect large terran"></span> 人族 · 圆角矩形 · 深蓝实线</div>
-            <div class="legend-item"><span class="shape diamond large protoss"></span> 神族 · 菱形 · 亮蓝渐变</div>
-            <div class="legend-item"><span class="shape circle large zerg"></span> 虫族 · 圆形 · 暗蓝虚线</div>
-            <div class="legend-item"><span class="shape hex medium upgrade"></span> 科技 · 六边形 · 中</div>
-            <div class="legend-item"><span class="shape square small ability"></span> 技能 · 方形 · 小</div>
-            <div class="legend-item"><span class="line base"></span> 基础层</div>
-            <div class="legend-item"><span class="line inferred"></span> 推理层</div>
-            <div class="legend-item"><span class="line semantic"></span> 语义层</div>
-          </section>
+            <section class="legend">
+              <h2>图例</h2>
+              <div class="legend-item"><span class="shape rect large terran"></span> 人族 · 圆角矩形 · 深蓝实线</div>
+              <div class="legend-item"><span class="shape diamond large protoss"></span> 神族 · 菱形 · 亮蓝渐变</div>
+              <div class="legend-item"><span class="shape circle large zerg"></span> 虫族 · 圆形 · 暗蓝虚线</div>
+              <div class="legend-item"><span class="shape hex medium upgrade"></span> 科技 · 六边形 · 中</div>
+              <div class="legend-item"><span class="shape square small ability"></span> 技能 · 方形 · 小</div>
+              <div class="legend-item"><span class="line base"></span> 基础层</div>
+              <div class="legend-item"><span class="line inferred"></span> 推理层</div>
+              <div class="legend-item"><span class="line semantic"></span> 语义层</div>
+            </section>
+          </div>
         </aside>
 
         <main class="canvas-panel">
-          <div id="graph-controls" class="graph-controls">
-            <section id="entity-locate-panel" class="entity-locate-panel">
-              <h3>实体精确定位</h3>
-              <div class="control-group">
-                <label for="entityUnitInput">单位 (Unit)</label>
-                <input
-                  type="text"
-                  id="entityUnitInput"
-                  list="entityUnitList"
-                  placeholder="输入或选择单位"
-                  autocomplete="off"
-                />
-                <datalist id="entityUnitList"></datalist>
-              </div>
-              <div class="control-group">
-                <label for="entityAbilityInput">技能/动作 (Ability)</label>
-                <input
-                  type="text"
-                  id="entityAbilityInput"
-                  list="entityAbilityList"
-                  placeholder="输入或选择技能"
-                  autocomplete="off"
-                />
-                <datalist id="entityAbilityList"></datalist>
-              </div>
-              <div class="control-group">
-                <label for="entityUpgradeInput">科技/升级 (Upgrade)</label>
-                <input
-                  type="text"
-                  id="entityUpgradeInput"
-                  list="entityUpgradeList"
-                  placeholder="输入或选择科技"
-                  autocomplete="off"
-                />
-                <datalist id="entityUpgradeList"></datalist>
-              </div>
-              <div class="entity-locate-actions">
-                <button type="button" id="entityFocusBtn" class="primary-btn">定位/展示</button>
-                <button type="button" id="entityResetBtn">重置</button>
-              </div>
-            </section>
-
-            <h3>图谱过滤器</h3>
-
-            <div class="control-group">
-              <label for="hideNodeInput">隐藏指定节点:</label><br />
-              <input type="text" id="hideNodeInput" placeholder="输入节点 ID 或名称" />
-              <button type="button" id="hideNodeBtn">隐藏</button>
-            </div>
-
-            <div class="control-group">
-              <label>关系筛选（可多选）:</label>
-              <div id="edgeFilterGroup" class="relation-filter-group">
-                <div class="relation-filter-actions">
-                  <button type="button" id="relationSelectAll" class="link-btn">全选</button>
-                  <button type="button" id="relationClearAll" class="link-btn">清空</button>
-                </div>
-                <div id="edgeFilterList" class="relation-filter-list"></div>
-                <p class="relation-filter-hint">未勾选时显示全部关系；勾选后仅显示对应关系的边，孤立节点自动隐藏</p>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <button type="button" id="revealAllBtn" class="primary-btn">展开全部节点</button>
-            </div>
-          </div>
           <div id="graph-error" class="graph-error hidden"></div>
           <div id="graph-empty-prompt" class="graph-empty-prompt">
             <div class="graph-empty-prompt-card">
-              <p class="graph-empty-prompt-title">请在左侧选择筛选条件</p>
-              <p class="graph-empty-prompt-desc">在左侧调整种族、节点类型、关系层级或关系类型，也可点击「展开全部节点」加载完整图谱</p>
+              <p class="graph-empty-prompt-title">请设置筛选条件以加载图谱</p>
+              <p class="graph-empty-prompt-desc">在左侧调整种族、节点类型或关系层级；也可点击左侧「🔍 筛选」打开面板进行实体定位与关系过滤，或点击「展开全部节点」加载完整图谱</p>
             </div>
           </div>
           <div id="graph-canvas" class="graph-canvas"></div>
@@ -137,8 +73,204 @@
           </div>
         </aside>
       </div>
+
+      <button
+        type="button"
+        id="filter-drawer-toggle"
+        class="filter-drawer-toggle"
+        aria-expanded="false"
+        aria-controls="filter-drawer"
+        title="展开筛选面板"
+      >
+        <span class="filter-drawer-toggle-icon" aria-hidden="true">🔍</span>
+        <span class="filter-drawer-toggle-label">筛选</span>
+        <span class="filter-drawer-toggle-arrow" aria-hidden="true">▶</span>
+      </button>
+
+      <aside id="filter-drawer" class="filter-drawer" aria-hidden="true">
+        <header class="filter-drawer-header">
+          <h2 class="filter-drawer-title">图谱筛选与定位</h2>
+          <button type="button" id="filter-drawer-close" class="filter-drawer-close" title="关闭筛选面板" aria-label="关闭筛选面板">×</button>
+        </header>
+
+        <div class="filter-drawer-body">
+          <details class="filter-drawer-section" open>
+            <summary class="filter-drawer-section-title">实体定位</summary>
+            <div class="filter-drawer-section-content">
+              <section id="entity-locate-panel" class="entity-locate-panel">
+                <div class="control-group">
+                  <label for="entityUnitInput">单位 (Unit)</label>
+                  <input
+                    type="text"
+                    id="entityUnitInput"
+                    list="entityUnitList"
+                    placeholder="输入或选择单位"
+                    autocomplete="off"
+                  />
+                  <datalist id="entityUnitList"></datalist>
+                </div>
+                <div class="control-group">
+                  <label for="entityAbilityInput">技能/动作 (Ability)</label>
+                  <input
+                    type="text"
+                    id="entityAbilityInput"
+                    list="entityAbilityList"
+                    placeholder="输入或选择技能"
+                    autocomplete="off"
+                  />
+                  <datalist id="entityAbilityList"></datalist>
+                </div>
+                <div class="control-group">
+                  <label for="entityUpgradeInput">科技/升级 (Upgrade)</label>
+                  <input
+                    type="text"
+                    id="entityUpgradeInput"
+                    list="entityUpgradeList"
+                    placeholder="输入或选择科技"
+                    autocomplete="off"
+                  />
+                  <datalist id="entityUpgradeList"></datalist>
+                </div>
+                <div class="entity-locate-actions">
+                  <button type="button" id="entityFocusBtn" class="primary-btn">定位/展示</button>
+                  <button type="button" id="entityResetBtn">重置</button>
+                </div>
+              </section>
+            </div>
+          </details>
+
+          <details class="filter-drawer-section" open>
+            <summary class="filter-drawer-section-title">图谱过滤</summary>
+            <div class="filter-drawer-section-content">
+              <div class="control-group">
+                <label for="hideNodeInput">隐藏指定节点</label>
+                <div class="hide-node-row">
+                  <input type="text" id="hideNodeInput" placeholder="输入节点 ID 或名称" />
+                  <button type="button" id="hideNodeBtn">隐藏</button>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label>关系筛选（可多选）</label>
+                <div id="edgeFilterGroup" class="relation-filter-group">
+                  <div class="relation-filter-actions">
+                    <button type="button" id="relationSelectAll" class="link-btn">全选</button>
+                    <button type="button" id="relationClearAll" class="link-btn">清空</button>
+                  </div>
+                  <div id="edgeFilterList" class="relation-filter-list"></div>
+                  <p class="relation-filter-hint">未勾选时显示全部关系；勾选后仅显示对应关系的边，孤立节点自动隐藏</p>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="filter-drawer-section">
+            <summary class="filter-drawer-section-title">高级筛选</summary>
+            <div class="filter-drawer-section-content">
+              <div class="control-group">
+                <label class="inline-checkbox">
+                  <input type="checkbox" id="neighborsOnlyToggle" />
+                  只显示当前节点邻居
+                </label>
+                <p class="relation-filter-hint">需先在图谱中点击一个节点；取消勾选恢复完整筛选视图</p>
+              </div>
+
+              <div class="control-group">
+                <span class="control-group-label">节点类型</span>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-kind value="Ability" checked /> 技能 (Ability)</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-kind value="Unit" checked /> 单位 (Unit)</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-kind value="Upgrade" checked /> 科技 (Upgrade)</label>
+              </div>
+
+              <div class="control-group">
+                <span class="control-group-label">种族（单位）</span>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-race value="Terran" checked /> 人族 (Terran)</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-race value="Protoss" checked /> 神族 (Protoss)</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-race value="Zerg" checked /> 虫族 (Zerg)</label>
+              </div>
+
+              <div class="control-group">
+                <span class="control-group-label">关系层级</span>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-layer value="base" checked /> 基础层 · 实线灰</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-layer value="inferred" checked /> 推理层 · 粗虚线绿</label>
+                <label class="inline-checkbox"><input type="checkbox" data-filter-layer value="semantic" checked /> 语义层 · 点划线红</label>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <footer class="filter-drawer-footer">
+          <button type="button" id="filterResetBtn">重置筛选</button>
+          <button type="button" id="revealAllBtn" class="primary-btn">展开全部节点</button>
+        </footer>
+      </aside>
     </div>
 
+    <script>
+      (function () {
+        function syncLayoutVars() {
+          var header = document.querySelector(".app-header");
+          var sidebar = document.querySelector("#filter-panel");
+          if (header) {
+            document.documentElement.style.setProperty("--header-height", header.offsetHeight + "px");
+          }
+          if (sidebar && window.innerWidth > 900) {
+            document.documentElement.style.setProperty("--sidebar-width", sidebar.offsetWidth + "px");
+          }
+        }
+
+        function initFilterDrawer() {
+          var drawer = document.getElementById("filter-drawer");
+          var toggle = document.getElementById("filter-drawer-toggle");
+          var closeBtn = document.getElementById("filter-drawer-close");
+          if (!drawer || !toggle) {
+            return;
+          }
+
+          function setDrawerOpen(open) {
+            syncLayoutVars();
+            drawer.classList.toggle("is-open", open);
+            drawer.setAttribute("aria-hidden", open ? "false" : "true");
+            toggle.classList.toggle("is-open", open);
+            toggle.setAttribute("aria-expanded", open ? "true" : "false");
+            toggle.title = open ? "收起筛选面板" : "展开筛选面板";
+            var arrow = toggle.querySelector(".filter-drawer-toggle-arrow");
+            if (arrow) {
+              arrow.textContent = open ? "◀" : "▶";
+            }
+          }
+
+          toggle.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setDrawerOpen(!drawer.classList.contains("is-open"));
+          });
+
+          if (closeBtn) {
+            closeBtn.addEventListener("click", function () {
+              setDrawerOpen(false);
+            });
+          }
+
+          document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && drawer.classList.contains("is-open")) {
+              setDrawerOpen(false);
+            }
+          });
+
+          window.addEventListener("resize", syncLayoutVars);
+          syncLayoutVars();
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initFilterDrawer);
+        } else {
+          initFilterDrawer();
+        }
+
+        window.syncLayoutVars = syncLayoutVars;
+      })();
+    </script>
     <script type="module" src="./js/main.js"></script>
   </body>
 </html>
